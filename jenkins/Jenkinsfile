@@ -1,6 +1,7 @@
 pipeline {
     agent any
-
+   environment {
+        GOCACHE = "${WORKSPACE}/.cache"
     stages {
         stage('Unit Tests - Backend') {
             agent{
