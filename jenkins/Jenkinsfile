@@ -20,6 +20,24 @@ pipeline {
                     sh 'go test -v ./...' 
                 }
             }
+
+        stage('Unit Tests - Frontend') {
+            agent{
+                docker {
+                    image 'node:20-alpine'
+                    args '-u root:root' 
+                    reuseNode true
+                }
+            }
+            steps {
+                sh 'mkdir -p /tmp/go-cache'
+                dir('bugtracker-frontend') {
+                    sh '''
+                        npm ci
+                        npm test
+                    '''
+                }
+            }
         }
     }
 }
