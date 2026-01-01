@@ -1,33 +1,12 @@
 pipeline {
     agent any
-
-    stages {
-        stage('Unit Tests - Backend') {
-            steps {
-                dir('bugtracker-backend') {
-                    go test -v ./...  
+        stages {
+            stage('Unit Tests - Backend') {
+                steps {
+                    dir('bugtracker-backend') {
+                    sh 'go test -v ./...'
                 }
             }
-        //     post {
-        //         always {
-        //             junit 'bugtracker-backend/test-results.xml'
-        //         }
-        //     }
-        // }
-
-        // stage('Unit Tests - Frontend') {
-        //     steps {
-        //         dir('bugtracker-frontend') {
-        //             sh '''
-        //                 docker run --rm -v $PWD:/app -w /app node:20-alpine sh -c "npm ci && npm test -- --reporter junit --reporter-options mochaFile=test-results.xml"
-        //             '''
-        //         }
-        //     }
-        //     post {
-        //         always {
-        //             junit 'bugtracker-frontend/test-results.xml'
-        //         }
-          //  }
         }
     }
 }
