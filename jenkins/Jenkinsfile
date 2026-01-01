@@ -1,23 +1,18 @@
 pipeline {
     agent any
-   
+
     stages {
         stage('Unit Tests - Backend') {
-            agent{
-                docker {
-                    image 'snakee/golang-junit:1.21'
-                    args '-u root:root' 
-                    reuseNode true
-                }
-            }
-
             environment {
-             GOCACHE = "/tmp/go-cache"
+                GOCACHE = "/tmp/go-cache"
             }
             steps {
                 sh 'mkdir -p /tmp/go-cache'
                 dir('bugtracker-backend') {
-                    sh 'go test -v ./... 2>&1 | go-junit-report > test-results.xml' 
+                    sh '''
+                        docker run --rm -v $PWD:/app -w /app snakee/golang-junit:1.21 \
+                        sh -c "go test -v ./... 2>&1 | go-junit-report > test-results.xml"
+                    '''
                 }
             }
             post {
@@ -26,20 +21,12 @@ pipeline {
                 }
             }
         }
+
         stage('Unit Tests - Frontend') {
-            agent{
-                docker {
-                    image 'node:20-alpine'
-                    args '-u root:root' 
-                    reuseNode true
-                }
-            }
             steps {
-                sh 'mkdir -p /tmp/go-cache'
                 dir('bugtracker-frontend') {
                     sh '''
-                        npm ci
-                        npm test
+                        docker run --rm -v $PWD:/app -w /app node:20-alpine sh -c "npm ci && npm test -- --reporter junit --reporter-options mochaFile=test-results.xml"
                     '''
                 }
             }
