@@ -1,42 +1,62 @@
+version: "3.8"
+
 networks:
   bugtracker:
     driver: bridge
 
+volumes:
+  jenkins_home:
+
 services:
+  jenkins:
+    image: snakee/golang-junit:1.21   # Go-enabled Jenkins
+    container_name: jenkins
+    ports:
+      - "8082:8080"                   # Host 8082 -> Container 8080 (Jenkins UI)
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    networks:
+      - bugtracker
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./bugtracker-backend
+    container_name: bugtracker-backend
+    ports:
+      - "8081:8080"                   # Host 8081 -> Container 8080
+    volumes:
+      - ./data:/app/data
+    networks:
+      - bugtracker
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   frontend:
     build:
       context: ./bugtracker-frontend
+    container_name: bugtracker-frontend
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
+      - NEXT_PUBLIC_API_URL=http://backend:8080  # Docker network name
     depends_on:
       backend:
         condition: service_healthy
     networks:
       - bugtracker
     healthcheck:
-      test: ["CMD", "wget", "--spider", "http://localhost:3000"]
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
       interval: 10s
       timeout: 5s
       retries: 3
-
-  backend:
-    build:
-      context: ./bugtracker-backend
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./data:/app/data
-    networks:
-      - bugtracker
-    healthcheck:
-      test: ["CMD", "wget", "-O", "-", "http://localhost:8080/api/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    restart: unless-stopped
